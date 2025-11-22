@@ -155,7 +155,7 @@ html {
 }
 
 .text-scrolling {
-  font-size: clamp(8rem, 20vw, 16rem);
+  font-size: clamp(4rem, 15vw, 12rem);
   white-space: nowrap;
   background: linear-gradient(
     90deg,
@@ -168,4 +168,10 @@ html {
   -webkit-text-fill-color: transparent;
   animation: scroll-text 20s linear infinite;
   will-change: transform;
+}
+
+@media (max-width: 640px) {
+  .text-scrolling {
+    font-size: clamp(3rem, 12vw, 6rem);
+  }
 }
