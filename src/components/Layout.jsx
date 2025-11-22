@@ -1,6 +1,5 @@
 import React from 'react';
 
-
 const Layout = ({ children }) => {
   return (
     <div className="min-h-screen text-slate-100 font-sans selection:bg-indigo-500/30 relative">
@@ -14,10 +13,22 @@ const Layout = ({ children }) => {
               ContractCanvas
             </span>
           </div>
-          <nav className="flex items-center gap-6 text-sm font-medium text-slate-400">
-            <a href="#" className="hover:text-white transition-colors">Documentation</a>
-            <a href="#" className="hover:text-white transition-colors">GitHub</a>
-          </nav>
+          <div className="flex items-center gap-6">
+            <a 
+              href="/dashboard" 
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Dashboard
+            </a>
+            <a 
+              href="https://github.com" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </header>
       <main className="container mx-auto px-4 py-8 relative z-20">
