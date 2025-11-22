@@ -4,35 +4,44 @@
  */
 
 const API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY || 'YourApiKeyToken';
-const BASE_URL = 'https://api.etherscan.io/v2/api';
 
-// Chain ID mapping for Etherscan API V2
-const CHAIN_NAMES = {
-  '1': 'Ethereum Mainnet',
-  '11155111': 'Sepolia Testnet',
-  '137': 'Polygon Mainnet',
-  '80002': 'Polygon Amoy Testnet',
-  '56': 'BSC Mainnet',
-  '8453': 'Base Mainnet',
-  '42161': 'Arbitrum One',
-  '10': 'Optimism'
+const EXPLORER_APIS = {
+  '1': {
+    name: 'Ethereum Mainnet',
+    url: 'https://api.etherscan.io/api'
+  },
+  '11155111': {
+    name: 'Sepolia Testnet',
+    url: 'https://api-sepolia.etherscan.io/api'
+  },
+  '137': {
+    name: 'Polygon Mainnet',
+    url: 'https://api.polygonscan.com/api'
+  },
+  '80002': {
+    name: 'Polygon Amoy Testnet',
+    url: 'https://api-amoy.polygonscan.com/api'
+  },
+  '56': {
+    name: 'BSC Mainnet',
+    url: 'https://api.bscscan.com/api'
+  }
 };
 
 /**
- * Fetch ABI from block explorer using Etherscan API V2
+ * Fetch ABI from block explorer
  * @param {string} address - Contract address
  * @param {string} chainId - Chain ID
  * @returns {Promise<{abi: Array, verified: boolean, name: string}>}
  */
 export async function fetchABI(address, chainId) {
-  const chainName = CHAIN_NAMES[chainId];
+  const explorer = EXPLORER_APIS[chainId];
   
-  if (!chainName) {
+  if (!explorer) {
     throw new Error(`Unsupported chain ID: ${chainId}`);
   }
 
-  // Etherscan API V2 format: https://api.etherscan.io/v2/api?chainid={chainId}&module=contract&action=getabi
-  const url = `${BASE_URL}?chainid=${chainId}&module=contract&action=getabi&address=${address}&apikey=${API_KEY}`;
+  const url = `${explorer.url}?module=contract&action=getabi&address=${address}&apikey=${API_KEY}`;
 
   try {
     const response = await fetch(url);
@@ -45,19 +54,16 @@ export async function fetchABI(address, chainId) {
       return {
         abi,
         verified: true,
-        source: chainName,
+        source: explorer.name,
         contractName: await fetchContractName(address, chainId)
       };
-    } else if (data.result && data.result.includes('not verified')) {
-      throw new Error('Contract source code not verified. Please verify your contract on Etherscan or use manual ABI import.');
-    } else if (data.message === 'NOTOK') {
-      // Check if it's even a contract
-      throw new Error('Unable to fetch ABI. This may not be a smart contract address, or the contract is not verified.');
+    } else if (data.result === 'Contract source code not verified') {
+      throw new Error('Contract not verified on block explorer');
     } else {
-      throw new Error(data.result || data.message || 'Failed to fetch ABI');
+      throw new Error(data.result || 'Failed to fetch ABI');
     }
   } catch (error) {
-    if (error.message.includes('not verified') || error.message.includes('not be a smart contract')) {
+    if (error.message.includes('not verified')) {
       throw error;
     }
     throw new Error(`Failed to fetch ABI: ${error.message}`);
@@ -65,16 +71,17 @@ export async function fetchABI(address, chainId) {
 }
 
 /**
- * Fetch contract name from block explorer using Etherscan API V2
+ * Fetch contract name from block explorer
  * @param {string} address - Contract address
  * @param {string} chainId - Chain ID
  * @returns {Promise<string>}
  */
 async function fetchContractName(address, chainId) {
-  if (!CHAIN_NAMES[chainId]) return 'Unknown Contract';
+  const explorer = EXPLORER_APIS[chainId];
+  
+  if (!explorer) return 'Unknown Contract';
 
-  // Etherscan API V2 format
-  const url = `${BASE_URL}?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=${API_KEY}`;
+  const url = `${explorer.url}?module=contract&action=getsourcecode&address=${address}&apikey=${API_KEY}`;
 
   try {
     const response = await fetch(url);

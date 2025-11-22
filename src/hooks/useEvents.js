@@ -16,14 +16,11 @@ export default function useEvents(address, abi, chainId, fromBlock = 'latest') {
   const [latestBlock, setLatestBlock] = useState(null);
 
   const RPC_URLS = {
-    '1': 'https://eth.llamarpc.com',
-    '11155111': 'https://rpc.sepolia.org',
+    '1': 'https://eth.public-rpc.com',
+    '11155111': 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
     '137': 'https://polygon-rpc.com',
     '80002': 'https://rpc-amoy.polygon.technology',
-    '56': 'https://bsc-dataseed.binance.org',
-    '8453': 'https://mainnet.base.org',
-    '42161': 'https://arb1.arbitrum.io/rpc',
-    '10': 'https://mainnet.optimism.io'
+    '56': 'https://bsc-dataseed.binance.org'
   };
 
   const fetchEvents = useCallback(async () => {

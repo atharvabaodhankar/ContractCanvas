@@ -4,6 +4,7 @@ import AddressInput from './components/AddressInput';
 import ChainSelector from './components/ChainSelector';
 import ABIManager from './components/ABIManager';
 import FunctionList from './components/FunctionList';
+import EventViewer from './components/EventViewer';
 import BackgroundParticles from './components/BackgroundParticles';
 import Preloader from './components/Preloader';
 import useContract from './hooks/useContract';
@@ -38,13 +39,16 @@ function App() {
               <AddressInput value={address} onAddressChange={setAddress} />
             </div>
 
-            <ABIManager onAbiChange={setAbi} />
+            <ABIManager onAbiChange={setAbi} address={address} chainId={chainId} />
           </div>
 
           {abi && (
             <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-8 duration-700">
               <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-800 to-transparent my-8"></div>
               <FunctionList abi={abi} onCall={callFunction} />
+              
+              {/* Event Viewer */}
+              <EventViewer address={address} abi={abi} chainId={chainId} />
             </div>
           )}
         </div>
