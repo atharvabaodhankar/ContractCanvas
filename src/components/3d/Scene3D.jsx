@@ -11,63 +11,137 @@ const Scene3D = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // 1. Setup Scene
+    // --- 1. Setup Scene ---
     const scene = new THREE.Scene();
-    // Transparent background so CSS background shows through if needed
-    // But we'll rely on the canvas being visible
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000, 0); // Transparent clear color
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Enable shadow map for better depth if needed, but keeping it performant
     containerRef.current.appendChild(renderer.domElement);
 
-    // 2. Create Cube (Simple & Robust)
-    const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5);
-    const material = new THREE.MeshNormalMaterial({ wireframe: true });
-    const cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+    // --- 2. Create "Sexy" Cube ---
+    // Using a group to handle rotation and position separately
+    const cubeGroup = new THREE.Group();
+    scene.add(cubeGroup);
 
-    // 3. Animation Loop
+    // Inner Core (Glowing)
+    const coreGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+    const coreMat = new THREE.MeshBasicMaterial({ 
+      color: 0x6366f1, // Indigo
+      wireframe: true,
+      transparent: true, 
+      opacity: 0.3 
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    cubeGroup.add(core);
+
+    // Outer Shell (Glassy/Metallic)
+    const shellGeo = new THREE.BoxGeometry(2, 2, 2);
+    const shellMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1e1b4b, // Dark Indigo
+      metalness: 0.9,
+      roughness: 0.1,
+      transmission: 0.2, // Glass-like
+      thickness: 1,
+      clearcoat: 1,
+      clearcoatRoughness: 0.1,
+      emissive: 0x4c1d95, // Purple glow
+      emissiveIntensity: 0.2
+    });
+    const shell = new THREE.Mesh(shellGeo, shellMat);
+    cubeGroup.add(shell);
+
+    // Edges for definition
+    const edges = new THREE.EdgesGeometry(shellGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, linewidth: 2 }); // Cyan edges
+    const lines = new THREE.LineSegments(edges, lineMat);
+    shell.add(lines);
+
+    // --- 3. Lighting ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+    mainLight.position.set(5, 5, 5);
+    scene.add(mainLight);
+
+    const blueLight = new THREE.PointLight(0x06b6d4, 2, 10);
+    blueLight.position.set(-3, 2, 3);
+    scene.add(blueLight);
+
+    const purpleLight = new THREE.PointLight(0xa855f7, 2, 10);
+    purpleLight.position.set(3, -2, 3);
+    scene.add(purpleLight);
+
+    // --- 4. Responsive Positioning ---
+    const updatePosition = () => {
+      const isMobile = window.innerWidth < 768;
+      
+      if (isMobile) {
+        // Mobile: Center top, smaller
+        cubeGroup.position.set(0, 1, 0);
+        cubeGroup.scale.set(0.6, 0.6, 0.6);
+      } else {
+        // Desktop: Left side, normal size
+        cubeGroup.position.set(-2.5, 0, 0);
+        cubeGroup.scale.set(1, 1, 1);
+      }
+    };
+    updatePosition();
+
+    // --- 5. Animation Loop ---
     const animate = () => {
       requestAnimationFrame(animate);
-      cube.rotation.x += 0.005;
-      cube.rotation.y += 0.005;
+      
+      // Complex rotation
+      shell.rotation.x += 0.003;
+      shell.rotation.y += 0.005;
+      
+      core.rotation.x -= 0.005; // Rotate opposite
+      core.rotation.y -= 0.005;
+
+      // Floating effect
+      cubeGroup.position.y += Math.sin(Date.now() * 0.001) * 0.002;
+
       renderer.render(scene, camera);
     };
     animate();
 
-    // 4. Scroll Interaction
-    gsap.to(cube.rotation, {
+    // --- 6. Scroll Interaction ---
+    // Rotate faster on scroll
+    gsap.to(cubeGroup.rotation, {
       scrollTrigger: {
         trigger: document.body,
         start: "top top",
         end: "bottom bottom",
         scrub: 1,
       },
-      x: Math.PI * 2,
-      y: Math.PI * 2,
+      x: Math.PI,
+      y: Math.PI,
     });
 
-    gsap.to(cube.scale, {
+    // Move to center on second section (example interaction)
+    gsap.to(cubeGroup.position, {
       scrollTrigger: {
         trigger: document.body,
         start: "top top",
         end: "bottom bottom",
         scrub: 1,
       },
-      x: 0.5,
-      y: 0.5,
-      z: 0.5,
+      x: 0, // Move to center eventually
+      ease: "power1.inOut"
     });
 
-    // 5. Resize Handler
+    // --- 7. Resize Handler ---
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      updatePosition(); // Update position on resize
     };
     window.addEventListener('resize', handleResize);
 
@@ -79,7 +153,6 @@ const Scene3D = () => {
     };
   }, []);
 
-  // Z-Index 0 ensures it's above the body background but below the content (z-10)
   return <div ref={containerRef} className="fixed inset-0 z-0 pointer-events-none" />;
 };
 
