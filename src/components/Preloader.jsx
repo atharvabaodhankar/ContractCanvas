@@ -2,88 +2,70 @@ import React, { useState, useEffect } from 'react';
 
 const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
-  const [stage, setStage] = useState('loading'); // loading, zooming, complete
+  const [stage, setStage] = useState('loading');
 
   useEffect(() => {
-    // Simulate loading progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          // Start zoom animation after loading completes
           setTimeout(() => {
             setStage('zooming');
-            // Complete after zoom animation
             setTimeout(() => {
               setStage('complete');
               onComplete();
-            }, 1200);
+            }, 1000);
           }, 300);
           return 100;
         }
         return prev + 2;
       });
-    }, 30);
+    }, 25);
 
     return () => clearInterval(interval);
   }, [onComplete]);
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center transition-all duration-1000 ${
+      className={`fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center overflow-hidden transition-all ${
         stage === 'zooming' ? 'scale-150 opacity-0' : 'scale-100 opacity-100'
-      } ${stage === 'complete' ? 'pointer-events-none' : ''}`}
+      }`}
       style={{
-        transition: 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease-out'
+        transition: 'transform 1s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.8s ease-out'
       }}
     >
-      <div className={`flex flex-col items-center gap-8 transition-all duration-700 ${
-        stage === 'zooming' ? 'scale-110' : 'scale-100'
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950/20 to-slate-950"></div>
+      
+      {/* Large scrolling text */}
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div className="text-scrolling-container">
+          <h1 className="text-scrolling font-black tracking-tighter leading-none select-none">
+            ContractCanvas ContractCanvas ContractCanvas
+          </h1>
+        </div>
+      </div>
+
+      {/* Small centered content */}
+      <div className={`relative z-10 flex flex-col items-center gap-6 transition-all duration-500 ${
+        stage === 'loading' ? 'opacity-100' : 'opacity-0'
       }`}>
-        {/* Logo with enhanced animations */}
+        {/* Minimal logo */}
         <div className="relative">
-          {/* Outer glow ring */}
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-3xl blur-3xl opacity-40 animate-pulse"></div>
-          
-          {/* Rotating ring */}
-          <div className="absolute inset-[-20px] rounded-full border-2 border-indigo-500/20 animate-spin-slow"></div>
-          
-          {/* Logo container */}
-          <div className="relative w-32 h-32 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform">
-            <img src="/logo.png" alt="ContractCanvas" className="w-20 h-20 object-contain filter drop-shadow-lg" />
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+            <img src="/logo.png" alt="CC" className="w-10 h-10 object-contain" />
           </div>
         </div>
 
-        {/* Brand name with stagger animation */}
-        <div className={`text-center space-y-2 transition-all duration-500 ${
-          stage === 'loading' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-        }`}>
-          <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-purple-300">
-            ContractCanvas
-          </h2>
-          <p className="text-slate-500 text-sm tracking-wider uppercase">
-            Smart Contract Visualizer
-          </p>
-        </div>
-
-        {/* Progress bar with gradient */}
-        <div className={`w-72 transition-all duration-500 ${
-          stage === 'loading' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}>
-          <div className="h-1 bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-sm">
+        {/* Minimal progress */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-48 h-0.5 bg-slate-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 transition-all duration-300 ease-out rounded-full relative"
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
-            >
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
-            </div>
+            ></div>
           </div>
-          
-          {/* Loading percentage */}
-          <div className="text-slate-600 text-xs font-mono text-center mt-3">
-            {progress}%
-          </div>
+          <span className="text-xs text-slate-600 font-mono">{progress}%</span>
         </div>
       </div>
     </div>
