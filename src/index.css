@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+body {
+  overflow-x: hidden;
+  background-color: #020617;
+}
+
+html {
+  background-color: #020617;
+}
+
+
 @keyframes fadeIn {
   from {
     opacity: 0;

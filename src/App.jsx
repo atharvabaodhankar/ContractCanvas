@@ -19,7 +19,7 @@ function App() {
   return (
     <>
       {loading && <Preloader onComplete={() => setLoading(false)} />}
-      <div className={loading ? 'opacity-0' : 'cinematic-reveal'}>
+      <div className={`overflow-x-hidden ${loading ? 'invisible' : 'cinematic-reveal'}`}>
         <BackgroundParticles />
         <Layout>
         <div className="flex flex-col items-center justify-center space-y-8 py-12">
