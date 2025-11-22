@@ -4,6 +4,7 @@ import AddressInput from './components/AddressInput';
 import ChainSelector from './components/ChainSelector';
 import ABIManager from './components/ABIManager';
 import FunctionList from './components/FunctionList';
+import BackgroundParticles from './components/BackgroundParticles';
 import useContract from './hooks/useContract';
 
 function App() {
@@ -14,7 +15,9 @@ function App() {
   const { callFunction } = useContract(address, abi, chainId);
 
   return (
-    <Layout>
+    <>
+      <BackgroundParticles />
+      <Layout>
       <div className="flex flex-col items-center justify-center space-y-8 py-12">
         <div className="text-center space-y-4 max-w-2xl">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-indigo-400">
@@ -42,6 +45,7 @@ function App() {
         )}
       </div>
     </Layout>
+    </>
   );
 }
 
