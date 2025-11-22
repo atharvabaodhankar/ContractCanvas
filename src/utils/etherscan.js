@@ -48,13 +48,16 @@ export async function fetchABI(address, chainId) {
         source: chainName,
         contractName: await fetchContractName(address, chainId)
       };
-    } else if (data.result === 'Contract source code not verified') {
-      throw new Error('Contract not verified on block explorer');
+    } else if (data.result && data.result.includes('not verified')) {
+      throw new Error('Contract source code not verified. Please verify your contract on Etherscan or use manual ABI import.');
+    } else if (data.message === 'NOTOK') {
+      // Check if it's even a contract
+      throw new Error('Unable to fetch ABI. This may not be a smart contract address, or the contract is not verified.');
     } else {
-      throw new Error(data.result || 'Failed to fetch ABI');
+      throw new Error(data.result || data.message || 'Failed to fetch ABI');
     }
   } catch (error) {
-    if (error.message.includes('not verified')) {
+    if (error.message.includes('not verified') || error.message.includes('not be a smart contract')) {
       throw error;
     }
     throw new Error(`Failed to fetch ABI: ${error.message}`);
