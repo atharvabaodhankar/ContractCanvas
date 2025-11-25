@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { FileJson, Upload, Check, AlertTriangle, Download, Loader2 } from 'lucide-react';
+import { FileJson, Upload, Check, AlertTriangle, Download, Loader2, Code, FlaskConical } from 'lucide-react';
 import { fetchABI, isValidAddress } from '../utils/etherscan';
+import { generateAbiFromSource } from '../utils/abiGenerator';
 
 const ABIManager = ({ onAbiChange, address, chainId }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,6 +9,8 @@ const ABIManager = ({ onAbiChange, address, chainId }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchStatus, setFetchStatus] = useState(null);
+  const [activeTab, setActiveTab] = useState('json'); // 'json' or 'source'
+  const [sourceCode, setSourceCode] = useState('');
 
   const handleAutoFetch = async () => {
     if (!address || !isValidAddress(address)) {
@@ -29,13 +32,42 @@ const ABIManager = ({ onAbiChange, address, chainId }) => {
       });
       setIsOpen(false);
     } catch (err) {
-      setError(err.message);
-      setFetchStatus({
-        success: false,
-        message: err.message
-      });
+      if (err.message.includes('not verified') || err.message.includes('not be a smart contract')) {
+        // Auto-switch to manual import for unverified contracts
+        setIsOpen(true);
+        setActiveTab('source'); // Default to source code as it might be easier for some
+        setError(''); // access it as a "hint" rather than red error
+        setFetchStatus({
+          success: false,
+          message: 'Contract not verified. Please paste the ABI or Source Code manually.'
+        });
+      } else {
+        setError(err.message);
+        setFetchStatus({
+          success: false,
+          message: err.message
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateAbi = () => {
+    try {
+      const generatedAbi = generateAbiFromSource(sourceCode);
+      if (generatedAbi.length === 0) {
+        throw new Error('No public functions found in source code. Make sure to define functions as "public" or "external".');
+      }
+      
+      setAbiText(JSON.stringify(generatedAbi, null, 2));
+      setActiveTab('json');
+      setFetchStatus({
+        success: true,
+        message: `Generated ABI with ${generatedAbi.length} functions`
+      });
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -101,10 +133,29 @@ const ABIManager = ({ onAbiChange, address, chainId }) => {
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <Upload size={16} /> Paste ABI JSON
-            </h3>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('json')}
+                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 ${
+                  activeTab === 'json' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <FileJson size={14} /> JSON ABI
+              </button>
+              <button
+                onClick={() => setActiveTab('source')}
+                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 ${
+                  activeTab === 'source' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <Code size={14} /> Solidity Source
+              </button>
+            </div>
             <button
               onClick={() => {
                 setIsOpen(false);
@@ -115,23 +166,54 @@ const ABIManager = ({ onAbiChange, address, chainId }) => {
               Cancel
             </button>
           </div>
-          <textarea
-            value={abiText}
-            onChange={(e) => setAbiText(e.target.value)}
-            className="w-full h-32 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none"
-            placeholder='[{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]'
-          />
-          <div className="flex justify-between items-center mt-3">
-            <span className="text-xs text-rose-400 flex items-center gap-1">
-              {error && <><AlertTriangle size={12} /> {error}</>}
-            </span>
-            <button
-              onClick={handleAbiSubmit}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              <Check size={14} /> Import ABI
-            </button>
-          </div>
+
+          {activeTab === 'json' ? (
+            <>
+              <div className="mb-2 text-xs text-slate-500">
+                Paste the contract ABI JSON array below.
+              </div>
+              <textarea
+                value={abiText}
+                onChange={(e) => setAbiText(e.target.value)}
+                className="w-full h-48 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none"
+                placeholder='[{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]'
+              />
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-xs text-rose-400 flex items-center gap-1">
+                  {error && <><AlertTriangle size={12} /> {error}</>}
+                </span>
+                <button
+                  onClick={handleAbiSubmit}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <Check size={14} /> Import ABI
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-2 text-xs text-slate-500">
+                Paste the Solidity source code. We'll try to extract public functions.
+              </div>
+              <textarea
+                value={sourceCode}
+                onChange={(e) => setSourceCode(e.target.value)}
+                className="w-full h-48 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none resize-none"
+                placeholder={'contract MyContract {\n  function transfer(address to, uint256 amount) public returns (bool) {\n    // ...\n  }\n}'}
+              />
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-xs text-rose-400 flex items-center gap-1">
+                  {error && <><AlertTriangle size={12} /> {error}</>}
+                </span>
+                <button
+                  onClick={handleGenerateAbi}
+                  className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <FlaskConical size={14} /> Generate ABI
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
